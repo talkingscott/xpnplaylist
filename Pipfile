@@ -13,3 +13,8 @@ matplotlib = "*"
 
 [requires]
 python_version = "3.6"
+
+[scripts]
+get_playlist = "python get_playlist.py"
+summarize_playlists = "python summarize_playlists.py"
+tabulate_artist_counts = "python tabulate_artist_counts.py"
