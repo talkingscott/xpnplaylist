@@ -7,7 +7,7 @@
 The get_playlist.py script downloads daily playlists as JSON.  It accepts partial dates, so that 2018-03-15 specifies a single day, 2018-03 specifies all days in that month, and 2018 specifies all days in that year.  The script also accepts an optional directory argument.
 
 ```bash
-$ pipenv run get_playlist.py --help
+$ pipenv run get_playlist --help
 usage: get_playlist.py [-h] [-D DIRECTORY] date [date ...]
 
 Get XPN Playlists
@@ -20,13 +20,13 @@ optional arguments:
   -D DIRECTORY, --directory DIRECTORY
                         The directory for output
 
-$ pipenv run get_playlist.py playlists/2018 2018-11-29 2018-11-30 2018-12
+$ pipenv run get_playlist playlists/2018 2018-11-29 2018-11-30 2018-12
 ```
 
 The summarize_playlists.py script reads a directory of downloaded playlists and prints a summary, which at this time is simply a count by artist.
 
 ```bash
-$ pipenv run summarize_playlists.py --help
+$ pipenv run summarize_playlists --help
 usage: summarize_playlists.py [-h] [-o OUTPUT] directory
 
 Summarize playlists in a directory
@@ -39,7 +39,7 @@ optional arguments:
   -o OUTPUT, --output OUTPUT
                         Output file
 
-$ pipenv run summarize_playlists.py -o counts-2018.txt playlists/2018
+$ pipenv run summarize_playlists -o playlist-counts/count-2018.txt playlists/2018
 ```
 
 ## Results
