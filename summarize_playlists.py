@@ -66,8 +66,8 @@ class PlaylistDir:
 def _main(directory, output_fp):
     playlist_dir = PlaylistDir(directory)
     artist_counts = playlist_dir.artist_counts
-    for artist_count in artist_counts.most_common():
-        print('%s\t%d' % artist_count, file=output_fp)
+    counts = [{'artist': ac[0], 'count': ac[1]} for ac in artist_counts.most_common()]
+    json.dump(counts, output_fp, indent=2)
 
 if __name__ == '__main__':
     import argparse
