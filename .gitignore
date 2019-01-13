@@ -1,4 +1,5 @@
-.mypy_cache
+.mypy_cache/
+.vscode/
 pyplot*.py
 playlists/
 playlist-counts/
