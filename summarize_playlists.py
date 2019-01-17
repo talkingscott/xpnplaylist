@@ -78,10 +78,7 @@ if __name__ == '__main__':
     args = arg_parser.parse_args()
 
     if args.output:
-        try:
-            os.makedirs(os.path.dirname(args.output))
-        except:
-            pass
+        os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
         with open(args.output, 'w', encoding='utf-8') as fp_out:
             _main(args.directory, fp_out)

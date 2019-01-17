@@ -68,7 +68,7 @@ if __name__ == '__main__':
     import argparse
 
     arg_parser = argparse.ArgumentParser(description='Summarize playlists for artist(s)')
-    arg_parser.add_argument('-D', '--directory', help='Directory containing playlists')
+    arg_parser.add_argument('-D', '--directory', default='.', help='Directory containing playlists')
     arg_parser.add_argument('artists', nargs='+', help='Artist(s)')
     args = arg_parser.parse_args()
 
