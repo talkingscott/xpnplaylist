@@ -8,6 +8,8 @@ import json
 import os.path
 import sys
 
+from playlist.artist import canonical_name
+
 class CountsDir:
     """ Operations on a directory of annual counts by artist """
     def __init__(self, directory):
@@ -25,8 +27,9 @@ class CountsDir:
             with open(filename) as fp:
                 counts = json.load(fp)
                 for ac in counts:
-                    if ac['artist'].lower() in self._artists:
-                        self._artist_counts[ac['artist'].lower()][i] += ac['count']
+                    artist = canonical_name(ac['artist'])
+                    if artist in self._artists:
+                        self._artist_counts[artist][i] += ac['count']
 
     def load_artist_total_counts(self):
         """ Loads total counts. """
@@ -36,7 +39,7 @@ class CountsDir:
             with open(filename) as fp:
                 artist_counts = json.load(fp)
                 for artist_count in artist_counts:
-                    artist = artist_count['artist'].lower()
+                    artist = canonical_name(artist_count['artist'])
                     self._artist_total_counts[artist] += artist_count['count']
 
     def load_artists(self, artists):
@@ -44,7 +47,7 @@ class CountsDir:
         self._artist_counts = {}
         self._artists = set()
         for artiste in artists:
-            artist = artiste.lower()
+            artist = canonical_name(artiste)
             self._artist_counts[artist] = [0] * len(self._years)
             self._artists.add(artist)
         self._artist_tuple = tuple(artists)
@@ -56,7 +59,7 @@ class CountsDir:
             self._artists = set()
             artist_list = []
             for line in fp:
-                artist = line.strip().lower()
+                artist = canonical_name(line.strip())
                 self._artist_counts[artist] = [0] * len(self._years)
                 self._artists.add(artist)
                 artist_list.append(artist)
@@ -144,4 +147,4 @@ if __name__ == '__main__':
     # 1. Write yearly totals for artists in artists.txt
     # 2. Write yearly totals for overall most popular artists
     # 3. Write overall artist counts
-    _main2()
+    _main1()

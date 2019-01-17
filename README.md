@@ -44,32 +44,31 @@ $ pipenv run summarize_playlists -o playlist-counts/count-2018.txt playlists/201
 
 ## Results
 
-I tabulated annual totals for some artists I like, but never seem to hear, along with a few "similar" artists that I do hear.  Note that K.T. Tunstall is spelled multiple ways in the playlists.  I did not aggregate across the spellings.
+I tabulated annual totals for some artists I like, but never seem to hear, along with a few "similar" artists that I do hear.
 
 | artist | 2007 | 2008 | 2009 | 2010 | 2011 | 2012 | 2013 | 2014 | 2015 | 2016 | 2017 | 2018 |
 | ------ | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| bitter:sweet | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| dido | 2 | 2 | 51 | 61 | 66 | 55 | 58 | 40 | 20 | 21 | 14 | 22 |
+| bitter:sweet | 0 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| dido | 38 | 82 | 51 | 61 | 66 | 55 | 58 | 40 | 20 | 21 | 14 | 22 |
 | eliza doolittle | 0 | 0 | 0 | 0 | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| fatboy slim | 28 | 16 | 33 | 12 | 50 | 38 | 16 | 18 | 8 | 11 | 12 | 14 |
-| feist | 4 | 116 | 1 | 104 | 429 | 294 | 129 | 123 | 48 | 47 | 76 | 52 |
-| ingrid michaelson | 1 | 1 | 1 | 378 | 176 | 361 | 124 | 1 | 68 | 62 | 38 | 49 |
-| jem | 35 | 11 | 28 | 28 | 26 | 24 | 19 | 10 | 8 | 2 | 4 | 1 |
-| k. t. tunstall | 0 | 66 | 70 | 286 | 210 | 98 | 240 | 104 | 54 | 58 | 44 | 151 |
-| k.t. tunstall | 420 | 114 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| kt tunstall | 1 | 3 | 1 | 20 | 3 | 6 | 20 | 2 | 0 | 0 | 1 | 2 |
-| kate bush | 2 | 1 | 1 | 111 | 126 | 99 | 85 | 91 | 64 | 53 | 71 | 87 |
+| fatboy slim | 28 | 34 | 33 | 12 | 50 | 38 | 16 | 18 | 8 | 11 | 12 | 14 |
+| feist | 732 | 364 | 102 | 104 | 429 | 294 | 129 | 123 | 48 | 47 | 76 | 52 |
+| ingrid michaelson | 162 | 413 | 412 | 378 | 176 | 361 | 124 | 805 | 68 | 62 | 38 | 49 |
+| jem | 35 | 37 | 28 | 28 | 26 | 24 | 19 | 10 | 8 | 2 | 4 | 1 |
+| joss stone | 425 | 102 | 158 | 89 | 184 | 218 | 112 | 86 | 119 | 46 | 34 | 48 |
+| k. t. tunstall | 430 | 183 | 71 | 306 | 213 | 104 | 260 | 106 | 54 | 58 | 45 | 153 |
+| kate bush | 81 | 74 | 101 | 111 | 126 | 99 | 85 | 91 | 64 | 53 | 71 | 87 |
 | lana del rey | 0 | 0 | 0 | 0 | 105 | 394 | 139 | 450 | 152 | 94 | 220 | 119 |
 | lenka | 0 | 6 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 |
-| lily allen | 17 | 2 | 257 | 99 | 88 | 70 | 50 | 49 | 19 | 17 | 19 | 21 |
+| lily allen | 377 | 141 | 257 | 99 | 88 | 70 | 50 | 49 | 19 | 17 | 19 | 21 |
 | material | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | paramore | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 |
-| regina spektor | 2 | 1 | 1 | 154 | 50 | 241 | 66 | 48 | 16 | 22 | 15 | 4 |
-| sara bareilles | 3 | 78 | 1 | 44 | 64 | 36 | 28 | 26 | 11 | 12 | 9 | 44 |
-| sia | 4 | 6 | 17 | 25 | 24 | 19 | 17 | 10 | 3 | 5 | 5 | 7 |
+| regina spektor | 190 | 40 | 311 | 154 | 50 | 241 | 66 | 48 | 16 | 22 | 15 | 4 |
+| sara bareilles | 13 | 157 | 37 | 44 | 64 | 36 | 28 | 26 | 11 | 12 | 9 | 44 |
+| sia | 16 | 21 | 17 | 25 | 24 | 19 | 17 | 10 | 3 | 5 | 5 | 7 |
 | sofi tukker | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 0 | 0 |
 | the crystal method | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
-| thievery corporation | 5 | 24 | 199 | 53 | 47 | 32 | 47 | 71 | 21 | 25 | 25 | 16 |
+| thievery corporation | 53 | 174 | 199 | 53 | 47 | 32 | 47 | 71 | 21 | 25 | 25 | 16 |
 
 I also tabulated annual totals for the 25 most played artists through 2018.  I am shocked that there are no female artists.  Further, although there are female acts just outside of the top 25 (e.g. the pretenders, bonnie raitt, adele, lucinda williams, brandi carlile, joni mitchell, ingrid michaelson, sheryl crow), the top 100 is decidedly dominated by males.
 
@@ -78,6 +77,7 @@ I also tabulated annual totals for the 25 most played artists through 2018.  I a
 | bruce springsteen | 726 | 910 | 880 | 1197 | 636 | 1536 | 765 | 1147 | 400 | 493 | 313 | 362 |
 | the beatles | 366 | 591 | 635 | 685 | 768 | 792 | 634 | 1140 | 434 | 625 | 610 | 767 |
 | the rolling stones | 742 | 774 | 551 | 639 | 594 | 871 | 957 | 906 | 302 | 501 | 405 | 500 |
+| r. e. m. | 732 | 873 | 455 | 565 | 1006 | 812 | 731 | 652 | 282 | 294 | 254 | 277 |
 | u2 | 665 | 568 | 733 | 502 | 628 | 755 | 774 | 922 | 302 | 298 | 367 | 334 |
 | bob dylan | 662 | 675 | 906 | 570 | 611 | 745 | 563 | 609 | 360 | 496 | 307 | 318 |
 | david bowie | 506 | 571 | 375 | 402 | 424 | 506 | 1018 | 551 | 274 | 683 | 521 | 411 |
@@ -85,7 +85,6 @@ I also tabulated annual totals for the 25 most played artists through 2018.  I a
 | wilco | 779 | 524 | 746 | 471 | 890 | 714 | 489 | 296 | 356 | 394 | 222 | 169 |
 | coldplay | 268 | 817 | 651 | 310 | 906 | 833 | 556 | 912 | 250 | 300 | 106 | 126 |
 | dr. dog | 46 | 487 | 151 | 1067 | 460 | 1201 | 737 | 623 | 183 | 254 | 81 | 370 |
-| r. e. m. | 0 | 0 | 400 | 542 | 962 | 788 | 708 | 628 | 273 | 286 | 252 | 272 |
 | ryan adams | 621 | 332 | 156 | 201 | 447 | 500 | 340 | 872 | 427 | 232 | 479 | 198 |
 | dave matthews band | 285 | 302 | 754 | 381 | 395 | 950 | 650 | 411 | 154 | 142 | 97 | 275 |
 | beck | 458 | 567 | 267 | 229 | 318 | 369 | 461 | 752 | 325 | 256 | 310 | 324 |
