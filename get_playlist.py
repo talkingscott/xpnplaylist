@@ -65,7 +65,6 @@ def _parse_item(data):
     except: # pylint: disable=W0702
         logging.error('Splitting %s: %s', data, traceback.format_exc())
         return None
-
     return {
         'time': time,
         'artist': artist,
@@ -84,6 +83,7 @@ class PlaylistParser(HTMLParser):   # pylint: disable=R0902
         self._have_accordian = False
         self._get_item = False
         self._done = False
+        self._previous_item = {}
 
     @property
     def playlist(self):
@@ -129,7 +129,8 @@ class PlaylistParser(HTMLParser):   # pylint: disable=R0902
         if self._get_item:
             logging.debug('Possible item: %s', data)
             item = _parse_item(data)
-            if item:
+            if item and item != self._previous_item:
+                self._previous_item = item.copy()
                 item['datetime'] = self._date + ' ' + item['time']
                 item['date'] = self._date
                 self._playlist.append(item)
