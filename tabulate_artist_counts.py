@@ -1,20 +1,20 @@
 """
 Tabulate playlist counts for artists.  Uses counts files already created by summarize_playlists.py.
 """
-# pylint: disable=C0103
+# pylint: disable=invalid-name
 
 from collections import Counter
 import json
 import os.path
 import sys
 
-from playlist.artist import canonical_name
+from lib.artists import canonical_name
 
 class CountsDir:
     """ Operations on a directory of annual counts by artist """
     def __init__(self, directory):
         self._directory = directory
-        self._years = list(range(2007, 2019))
+        self._years = list(range(2007, 2022))
         self._artist_total_counts = Counter()
         self._artist_counts = {}
         self._artists = set()
@@ -144,7 +144,7 @@ def _main3():
 
 if __name__ == '__main__':
     # Modes
-    # 1. Write yearly totals for artists in artists.txt
+    # 1. Write yearly totals for artists listed in artists.txt
     # 2. Write yearly totals for overall most popular artists
     # 3. Write overall artist counts
     _main1()

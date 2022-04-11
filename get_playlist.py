@@ -1,208 +1,289 @@
 """
-Get the XPN playlist page for a date and parse it to a list of dict.
-"""
-# pylint: disable=C0103
+Get a playlist from a radio/streaming service for one or more dates.
 
-from html.parser import HTMLParser
-from html.entities import name2codepoint
+The playlist for each date is written to a separate file as a JSON array of
+objects.
+"""
+import argparse
+import collections.abc
 import json
 import logging
 import os
 import os.path
-import traceback
+import sys
+import time
+from typing import Any, Mapping, Optional, Sequence, Union
 
 import requests
 
-DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+from lib.dates import dates_for_datespec
 
-PLAYLIST_URL = 'http://xpn.org/playlists/xpn-playlist'
+NativeJson = Optional[Union[Sequence[Mapping[str, str]], Mapping[str, Any]]]
+PlaylistJson = Optional[Sequence[Mapping[str, str]]]
 
-def _attr(attrs, attr_name):
-    """ Gets the value of an attribute or None """
-    for attr in attrs:
-        if attr[0] == attr_name:
-            return attr[1]
-    return None
 
-def _days_in_month(month_0, year):
-    """ Returns days in a month (0-indexed).  Hope I got this right. """
-    if month_0 != 1:
-        return DAYS_IN_MONTH[month_0]
-    if (year % 4) == 0 and ((year % 100) != 0 or (year % 400) == 0):
-        return DAYS_IN_MONTH[month_0] + 1
-    return DAYS_IN_MONTH[month_0]
-
-def _reformat_date_for_post(date):
-    """ Reformats a date string from yyyy-MM-dd to MM-dd-yyyy """
-    return date[5:] + '-' + date[:4]
-
-def _reformat_time(time):
-    """ Reformats a time string from hh:mm am to HH:mm """
-    hour = time[:2]
-    ampm = time[6:]
-    if hour == '12':
-        if ampm == 'am':
-            hour = '00'
+def get_playlist_native_json(playlist_url: str, playlist_date: str) -> NativeJson:
+    """Get a playlist as the JSON native to the service."""
+    epoch_millis = int(time.time() * 1000)
+    playlist_date_slashes = playlist_date.replace("-", "/")
+    url = playlist_url.format(
+        epoch_millis=epoch_millis,
+        playlist_date=playlist_date,
+        playlist_date_slashes=playlist_date_slashes
+    )
+    resp = requests.get(url)
+    if resp.status_code >= 400:
+        logging.error(
+            "Error getting data for %s: %d",
+            playlist_date,
+            resp.status_code
+        )
+        if resp.status_code >= 500:
+            time.sleep(1)
+            resp = requests.get(url)
+            if resp.status_code >= 400:
+                logging.error(
+                    "Error in second try getting data for %s: %d",
+                    playlist_date,
+                    resp.status_code
+                )
+                return None
+            logging.info("Retry successful for %s", playlist_date)
         else:
-            hour = '12'
+            return None
+
+    content_type = resp.headers["content-type"]
+    if not content_type.startswith("application/json"):
+        logging.error("Got %s instead of JSON for %s", content_type, playlist_date)
+        return None
+
+    logging.debug("Response: %s", resp.text)
+    return resp.json()
+
+
+class KCRWPlaylistFetcher:
+    """Fetch and parse KCRW playlists."""
+    def __init__(self):
+        self.url = "https://tracklist-api.kcrw.com/Simulcast/date/{playlist_date_slashes}"
+
+    def get_playlist(self, playlist_date: str) -> PlaylistJson:
+        """Get a KCRW playlist in our format."""
+        playlist = get_playlist_native_json(self.url, playlist_date)
+        if not playlist:
+            return None
+        if not isinstance(playlist, collections.abc.Sequence):
+            logging.error("Unexpected data structure for %s", playlist_date)
+            return None
+        return [self._parse_item(item) for item in filter(self._keep_item, playlist)]
+
+    def _date_parts_for_item(self, item: Mapping[str, str]):
+        if isinstance(item["datetime"], str):
+            played_at = item["datetime"]
+            date = played_at[:10]
+            tod = played_at[11:19]
+        else:
+            date = item["date"]
+            tod = "00:00"
+        datetime = f"{date} {tod}"
+        return datetime, date, tod
+
+    def _keep_item(self, item: Mapping[str, str]):
+        return item["title"] and not item["artist"] == "[BREAK]"
+
+    def _parse_item(self, item: Mapping[str, str]):
+        """Parses an item from a KCRW playlist."""
+        datetime, date, tod = self._date_parts_for_item(item)
+        return {
+            "time": tod,
+            "artist": item["artist"],
+            "track": item["title"],
+            "date": date,
+            "datetime": datetime,
+            "album": item["album"]
+        }
+
+
+class TheCurrentPlaylistFetcher:
+    """Fetch and parse The Current playlists."""
+    def __init__(self):
+        self.url = "https://www.thecurrent.org/_next/data/4Fb9cdLRrYDReTyiEcTtA/playlist/the-current/{playlist_date}.json?slug=the-current&slug={playlist_date}"
+
+    def get_playlist(self, playlist_date: str) -> PlaylistJson:
+        """Get a The Current playlist in our format."""
+        playlist = get_playlist_native_json(self.url, playlist_date)
+        if not playlist:
+            return None
+        if not isinstance(playlist, collections.abc.Mapping):
+            logging.error("Unexpected data structure for %s", playlist_date)
+            return None
+        return [self._parse_item(item) for item in playlist["pageProps"]["data"]["songs"]]
+
+    def _date_parts_for_item(self, item: Mapping[str, str]):
+        played_at = item["played_at"]
+        date = played_at[:10]
+        tod = played_at[11:19]
+        datetime = f"{date} {tod}"
+        return datetime, date, tod
+
+    def _parse_item(self, item: Mapping[str, str]):
+        """Parse an item from a The Current playlist."""
+        datetime, date, tod = self._date_parts_for_item(item)
+        return {
+            "time": tod,
+            "artist": item["artist"],
+            "track": item["title"],
+            "date": date,
+            "datetime": datetime,
+            "album": item["album"]
+        }
+
+
+class WNCWPlaylistFetcher:
+    """Fetch and parse WNCW playlists."""
+    def __init__(self):
+        self.url = "https://api.composer.nprstations.org/v1/widget/5187f56de1c8c6a808e91b8d/playlist?t={epoch_millis}&datestamp={playlist_date}&order=1&errorMsg=No+results+found.+Please+modify+your+search+and+try+again."
+
+    def get_playlist(self, playlist_date: str) -> PlaylistJson:
+        """Get a WNCW playlist in our format."""
+        playlist = get_playlist_native_json(self.url, playlist_date)
+        if not playlist:
+            return None
+        if not isinstance(playlist, collections.abc.Mapping):
+            logging.error("Unexpected data structure for %s", playlist_date)
+            return None
+        return [self._parse_item(item) for plist in playlist["playlist"] for item in filter(self._keep_item, plist["playlist"])]
+
+    def _date_parts_for_item(self, item: Mapping[str, str]):
+        datetime = item["_start_time"]
+        date = datetime[:10]
+        tod = datetime[11:19]
+        datetime = f"{date} {tod}"
+        return datetime, date, tod
+
+    def _keep_item(self, item: Mapping[str, str]):
+        return "artistName" in item
+
+    def _parse_item(self, item: Mapping[str, str]):
+        """Parse an item from a The Current playlist."""
+        datetime, date, tod = self._date_parts_for_item(item)
+        return {
+            "time": tod,
+            "artist": item["artistName"],
+            "track": item["trackName"],
+            "date": date,
+            "datetime": datetime,
+            "album": item.get("collectionName")
+        }
+
+
+class XPNPlaylistFetcher:
+    """Fetch and parse XPN playlists."""
+    DATETIME_KEYS = ("air_date", "timeslice")
+
+    def __init__(self, service: str):
+        if service == "xpn":
+            self.url = "https://origin.xpn.org/utils/playlist/json/{playlist_date}.json"
+        else:
+            self.url = "https://origin.xpn.org/xpn2/json/{playlist_date}.json"
+
+    def get_playlist(self, playlist_date: str) -> PlaylistJson:
+        """Get an XPN playlist in our format."""
+        playlist = get_playlist_native_json(self.url, playlist_date)
+        if not playlist:
+            return None
+        if not isinstance(playlist, collections.abc.Sequence):
+            logging.error("Unexpected data structure for %s", playlist_date)
+            return None
+        return [self._parse_item(item) for item in filter(self._keep_item, playlist)]
+
+    def _date_parts_for_item(self, item: Mapping[str, str]):
+        for key in self.DATETIME_KEYS:
+            if key in item:
+                datetime = item[key]
+                parts = datetime.split(" ")
+                return datetime, parts[0], parts[1]
+        raise ValueError("No time found: %s" % json.dumps(item, indent=2))
+
+    def _keep_item(self, item: Mapping[str, str]):
+        return not item["artist"].startswith("|")
+
+    def _parse_item(self, item: Mapping[str, str]):
+        """Parse an item from an XPN playlist."""
+        datetime, date, tod = self._date_parts_for_item(item)
+        return {
+            "time": tod,
+            "artist": item["artist"],
+            "track": item["song"],
+            "date": date,
+            "datetime": datetime,
+            "album": item["album"]
+        }
+
+
+def write_playlist(fetcher, playlist_date: str, directory: str):
+    """Fetch and write a playlist for a date to a file."""
+    playlist = fetcher.get_playlist(playlist_date)
+    if playlist:
+        filename = os.path.join(directory, f'playlist-{playlist_date}.json')
+        with open(filename, 'w') as pfp:
+            pfp.write(json.dumps(playlist, indent=2))
+        logging.info('Wrote %d playlist items to %s', len(playlist), filename)
     else:
-        if ampm == 'pm':
-            hour = str(int(hour) + 12)
-    return hour + ':' + time[3:5]
+        logging.info("Nothing written for %s", playlist_date)
 
-def _parse_item(data):
-    """ Parses an item from the playlist or None for programming or support requests """
-    if data.startswith("Like what you're hearing?"):
-        return None
-    if len(data) < 10:
-        logging.info('Short item: %r length: %d', data, len(data))
-        return None
-    if data[9] == '|':
-        return None
-    time = _reformat_time(data[:8])
-    try:
-        artist, track = data[9:].split(' - ', 1)
-    except: # pylint: disable=W0702
-        logging.error('Splitting %s: %s', data, traceback.format_exc())
-        return None
-    return {
-        'time': time,
-        'artist': artist,
-        'track': track
-    }
 
-class PlaylistParser(HTMLParser):   # pylint: disable=R0902
-    """ Parses a playlist from xpn.org HTML """
-    def __init__(self, date):
-        super().__init__()
-        self._date = date
-        self._playlist = []
-        self._depth = 0
-        self._have_article_body = False
-        self._have_accordian_resized = False
-        self._have_accordian = False
-        self._get_item = False
-        self._done = False
-        self._previous_item = {}
-
-    @property
-    def playlist(self):
-        """ The playlist parsed from HTML """
-        return self._playlist
-
-    def handle_starttag(self, tag, attrs):
-        if self._done:
-            return
-        if not self._have_article_body:
-            if tag == 'div' and _attr(attrs, 'itemprop') == 'articleBody':
-                logging.debug('Have articleBody')
-                self._have_article_body = True
-            return
-        if not self._have_accordian_resized:
-            if tag == 'div' and _attr(attrs, 'id') == 'accordion-resizer':
-                logging.debug('Have accordion-resizer')
-                self._have_accordian_resized = True
-                self._depth = 1
-            return
-        self._depth += 1
-        if not self._have_accordian:
-            if tag == 'div' and _attr(attrs, 'id') == 'accordion':
-                logging.debug('Have accordion')
-                self._have_accordian = True
-            return
-        if tag == 'a':
-            logging.debug('Have anchor')
-            self._get_item = True
-
-    def handle_endtag(self, tag):
-        if self._done:
-            return
-        if self._have_accordian_resized:
-            self._depth -= 1
-            if self._depth <= 0:
-                logging.debug('Done')
-                self._done = True
-
-    def handle_data(self, data):
-        if self._done:
-            return
-        if self._get_item:
-            logging.debug('Possible item: %s', data)
-            item = _parse_item(data)
-            if item and item != self._previous_item:
-                self._previous_item = item.copy()
-                item['datetime'] = self._date + ' ' + item['time']
-                item['date'] = self._date
-                self._playlist.append(item)
-            self._get_item = False
-
-    def handle_comment(self, data):
-        logging.debug("Comment: %s", data)
-
-    def handle_entityref(self, name):
-        ch = chr(name2codepoint[name])
-        logging.info("Named entity: %s", ch)
-
-    def handle_charref(self, name):
-        if name.startswith('x'):
-            ch = chr(int(name[1:], 16))
-        else:
-            ch = chr(int(name))
-        logging.info("Numeric entity: %s", ch)
-
-    def handle_decl(self, decl):
-        logging.debug("Decl: %s", decl)
-
-    def error(self, message):
-        logging.error(message)
-
-def get_playlist_for(playlist_date):
-    """ Gets the playlist for a date """
-    parser = PlaylistParser(playlist_date)
-    resp = requests.post(PLAYLIST_URL,
-                         data={'playlistdate': _reformat_date_for_post(playlist_date)})
-    parser.feed(resp.text)
-    parser.close()
-    return parser.playlist
-
-def write_playlist_for(playlist_date, directory):
-    """ Writes a playlist for a date to a file """
-    playlist = get_playlist_for(playlist_date)
-    filename = os.path.join(directory, f'playlist-{playlist_date}.json')
-    with open(filename, 'w') as fp:
-        fp.write(json.dumps(playlist, indent=2))
-    logging.info('Wrote %d playlist items to %s', len(playlist), filename)
-
-def _dates_for_date(date):
-    if len(date) == 10:
-        yield date
-    elif len(date) == 7:
-        month0 = int(date[5:]) - 1
-        year = int(date[:4])
-        for day0 in range(_days_in_month(month0, year)):
-            yield date + '-' + ('%02d' % (day0 + 1))
-    elif len(date) == 4:
-        year = int(date)
-        for month0 in range(12):
-            for day0 in range(_days_in_month(month0, year)):
-                yield date + '-' + ('%02d' % (month0 + 1)) + '-' + ('%02d' % (day0 + 1))
-
-if __name__ == '__main__':
-    import argparse
-
-    logging.basicConfig(level=logging.INFO)
+def main():
+    """Write a playlist file for each date specified on the command line."""
+    logging.basicConfig(
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        level=logging.INFO
+    )
 
     arg_parser = argparse.ArgumentParser(description='Get XPN Playlists')
-    arg_parser.add_argument('-D', '--directory', default='.', help='The directory for output')
-    arg_parser.add_argument('date', nargs='+',
-                            help='The date(s) to fetch (yyyy-MM-dd or yyyy-MM or yyyy)')
+    arg_parser.add_argument(
+        '-D',
+        '--directory',
+        help='The directory for output'
+    )
+    arg_parser.add_argument(
+        '-S',
+        '--service',
+        default='xpn',
+        help='The service (xpn|xpn2|thecurrent|kcrw|wncw)'
+    )
+    arg_parser.add_argument(
+        'date',
+        nargs='+',
+        help='The date(s) to fetch (yyyy-MM-dd or yyyy-MM or yyyy)'
+    )
     args = arg_parser.parse_args()
+
+    if args.service in ("xpn", "xpn2"):
+        fetcher = XPNPlaylistFetcher(args.service)
+    elif args.service == "thecurrent":
+        fetcher = TheCurrentPlaylistFetcher()
+    elif args.service == "kcrw":
+        fetcher = KCRWPlaylistFetcher()
+    elif args.service == "wncw":
+        fetcher = WNCWPlaylistFetcher()
+    else:
+        logging.fatal("Unknown service: %s", args.service)
+        sys.exit(1)
 
     try:
         os.makedirs(args.directory)
     except IOError:
         pass
 
+    if args.directory:
+        output_dir = args.directory
+    else:
+        output_dir = os.path.join("playlists", args.service, args.date[0][:4])
+
     for _date in args.date:
-        for play_date in _dates_for_date(_date):
-            write_playlist_for(play_date, args.directory)
+        for play_date in dates_for_datespec(_date):
+            write_playlist(fetcher, play_date, output_dir)
+
+
+if __name__ == '__main__':
+    main()
