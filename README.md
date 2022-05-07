@@ -22,7 +22,7 @@ optional arguments:
   -D DIRECTORY, --directory DIRECTORY
                         The directory for output
   -S SERVICE, --service SERVICE
-                        The service (xpn|xpn2|thecurrent)
+                        The service (xpn|xpn2|thecurrent|kcrw|wncw)
 
 $ pipenv run get_playlist -S xpn -D playlists/xpn/2018 2018-11-29 2018-11-30 2018-12
 ```
